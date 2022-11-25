@@ -15,24 +15,26 @@ namespace MyApp
     {
         public override void PreInitialize()
         {
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies()
+                .Where(x =>
+                    (x.FullName ?? "").Contains("MyApp.Application")
+                ).ToList();
+
             Configuration.Modules.AbpAutoMapper().Configurators.Add(config =>
             {
                 //config.CreateMap<User, LoginDto>()
                 //    .ForMember(u => u.UserId, options => options.MapFrom(input => input.Id));
                 //config.AddProfile<UserMapping>();
 
-                var assemblies = AppDomain.CurrentDomain.GetAssemblies()
-                    .Where(x =>
-                        (x.FullName ?? "").Contains("MyApp.Application")
-                    ).ToList();
+                // Tự động initialize các profile mapping
                 foreach (var assembly in assemblies)
                 {
-                    var types = assembly.GetTypes()
+                    assembly.GetTypes()
                         .Where(x => x.IsSubclassOf(typeof(Profile)))
                         .Select(Activator.CreateInstance)
                         .OfType<Profile>()
-                        .ToList();
-                    types.ForEach(x => config.AddProfile(x));
+                        .ToList()
+                        .ForEach(x => config.AddProfile(x));
                 }
             });
         }
